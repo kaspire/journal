@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CET Trading Journal</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+  :root {
+    --bg: #0d0f0f;
+    --bg2: #131616;
+    --bg3: #181c1c;
+    --border: #222828;
+    --border2: #2a3232;
+    --text: #d4dede;
+    --text2: #7a9494;
+    --text3: #4a6060;
+    --accent: #00c896;
+    --accent2: #00a07a;
+    --red: #e05555;
+    --amber: #d4902a;
+    --blue: #4a90c4;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --font-sans: 'IBM Plex Sans', sans-serif;
+    --radius: 6px;
+    --radius-lg: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); font-size: 14px; min-height: 100vh; }
+
+  .header { border-bottom: 1px solid var(--border); padding: 18px 32px; display: flex; align-items: center; justify-content: space-between; background: var(--bg2); }
+  .header-left { display: flex; align-items: baseline; gap: 16px; }
+  .logo { font-family: var(--font-mono); font-size: 16px; font-weight: 500; color: var(--accent); letter-spacing: .04em; }
+  .logo-sub { font-size: 11px; color: var(--text3); letter-spacing: .08em; text-transform: uppercase; }
+  .header-right { display: flex; gap: 10px; align-items: center; }
+  .entry-count { font-family: var(--font-mono); font-size: 11px; color: var(--text3); }
+
+  .nav { display: flex; gap: 0; border-bottom: 1px solid var(--border); background: var(--bg2); padding: 0 32px; }
+  .nav-tab { padding: 12px 20px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; cursor: pointer; border: none; background: transparent; color: var(--text3); font-family: var(--font-sans); font-weight: 500; border-bottom: 2px solid transparent; transition: all .15s; }
+  .nav-tab:hover { color: var(--text2); }
+  .nav-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  .main { padding: 28px 32px; max-width: 1400px; margin: 0 auto; }
+  .section { display: none; }
+  .section.active { display: block; }
+
+  .card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 16px; }
+  .card-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+  .g4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; }
+
+  .form-group { margin-bottom: 0; }
+  .form-group label { display: block; font-size: 11px; color: var(--text3); margin-bottom: 5px; font-family: var(--font-mono); letter-spacing: .04em; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 8px 11px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: var(--font-mono); font-size: 13px; transition: border-color .15s; -webkit-appearance: none; }
+  .form-group textarea { resize: vertical; min-height: 60px; font-family: var(--font-sans); }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent2); }
+  .form-group input[readonly] { opacity: .5; cursor: default; }
+  select option { background: var(--bg3); }
+
+  .btn { padding: 9px 20px; font-size: 12px; font-family: var(--font-mono); letter-spacing: .04em; border-radius: var(--radius); cursor: pointer; border: 1px solid var(--border2); background: transparent; color: var(--text2); transition: all .15s; }
+  .btn:hover { border-color: var(--text3); color: var(--text); }
+  .btn-primary { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 500; }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); color: #000; }
+  .btn-sm { padding: 5px 10px; font-size: 11px; }
+  .btn-danger { color: var(--red); border-color: #3a2020; }
+  .btn-danger:hover { background: #3a2020; }
+  .btn-edit { color: var(--accent2); border-color: #0f3020; }
+  .btn-edit:hover { background: #0a2018; }
+
+  .badge { display: inline-block; padding: 2px 7px; border-radius: 3px; font-size: 10px; font-family: var(--font-mono); font-weight: 500; letter-spacing: .04em; }
+  .b-pos { background: #0a2e20; color: var(--accent); border: 1px solid #0f4030; }
+  .b-neg { background: #2e0a0a; color: var(--red); border: 1px solid #4a1010; }
+  .b-warn { background: #2a1e08; color: var(--amber); border: 1px solid #3a2c10; }
+  .b-neutral { background: var(--bg3); color: var(--text3); border: 1px solid var(--border); }
+  .b-blue { background: #0a1e2e; color: var(--blue); border: 1px solid #102840; }
+
+  .metric-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+  .metric { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+  .metric-label { font-size: 10px; color: var(--text3); font-family: var(--font-mono); letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+  .metric-value { font-size: 22px; font-weight: 500; font-family: var(--font-mono); color: var(--text); }
+  .metric-sub { font-size: 10px; color: var(--text3); margin-top: 3px; font-family: var(--font-mono); }
+
+  .table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--font-mono); }
+  thead th { text-align: left; padding: 8px 10px; font-size: 10px; color: var(--text3); letter-spacing: .07em; text-transform: uppercase; border-bottom: 1px solid var(--border); white-space: nowrap; font-weight: 500; }
+  tbody td { padding: 9px 10px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: var(--bg3); }
+
+  .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; margin-right: 5px; vertical-align: middle; }
+  .dot-hit { background: var(--accent); }
+  .dot-miss { background: var(--red); }
+
+  .pbar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 6px; }
+  .pbar-fill { height: 3px; border-radius: 2px; }
+
+  .notice { background: #0a1e16; border: 1px solid #0f3020; border-radius: var(--radius); padding: 10px 14px; font-size: 12px; color: var(--accent2); margin-bottom: 16px; font-family: var(--font-mono); }
+  .empty { text-align: center; padding: 60px 20px; color: var(--text3); font-family: var(--font-mono); font-size: 13px; }
+  .chart-wrap { position: relative; width: 100%; height: 220px; }
+
+  .toolbar { display: flex; gap: 10px; align-items: center; margin-bottom: 16px; flex-wrap: wrap; justify-content: space-between; }
+  .toolbar-left { display: flex; gap: 10px; }
+  .toolbar-right { display: flex; gap: 10px; }
+
+  .level-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .level-row:last-child { border-bottom: none; }
+
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; padding-top: 8px; }
+
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 1000; align-items: flex-start; justify-content: center; padding: 40px 20px; overflow-y: auto; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); width: 100%; max-width: 860px; padding: 24px 28px; position: relative; }
+  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+  .modal-title { font-family: var(--font-mono); font-size: 13px; color: var(--accent); letter-spacing: .06em; }
+  .modal-date { font-family: var(--font-mono); font-size: 11px; color: var(--text3); }
+  .modal-close { background: transparent; border: none; color: var(--text3); font-size: 20px; cursor: pointer; padding: 0 4px; line-height: 1; }
+  .modal-close:hover { color: var(--text); }
+  .modal-section { margin-bottom: 18px; }
+  .modal-section-title { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .notes-row td { color: var(--text3) !important; font-style: italic; font-size: 11px; font-family: var(--font-sans); }
+
+  /* News card */
+  .news-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 24px; margin-bottom: 16px; }
+  .news-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+  .news-header-left { font-family: var(--font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--text3); }
+  .news-header-right { display: flex; gap: 8px; align-items: center; }
+  .news-date-nav { background: transparent; border: 1px solid var(--border); color: var(--text3); font-family: var(--font-mono); font-size: 11px; padding: 3px 8px; border-radius: 3px; cursor: pointer; }
+  .news-date-nav:hover { border-color: var(--text2); color: var(--text); }
+  .news-loading { text-align: center; padding: 20px; color: var(--text3); font-family: var(--font-mono); font-size: 12px; }
+  .news-row { display: grid; grid-template-columns: 65px 55px 1fr 80px 80px; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .news-row:last-child { border-bottom: none; }
+  .news-time { font-family: var(--font-mono); color: var(--text2); font-size: 11px; }
+  .news-ccy { font-family: var(--font-mono); font-weight: 500; font-size: 11px; }
+  .news-title { color: var(--text); }
+  .news-fc { font-family: var(--font-mono); font-size: 11px; color: var(--text3); }
+  .impact-high { color: var(--red); }
+  .impact-med { color: var(--amber); }
+  .impact-low { color: var(--text3); }
+  .impact-holiday { color: var(--blue); }
+  .impact-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-right: 4px; vertical-align: middle; }
+  .impact-dot.high { background: var(--red); }
+  .impact-dot.med { background: var(--amber); }
+  .impact-dot.low { background: var(--text3); }
+  .impact-dot.holiday { background: var(--blue); }
+  .news-empty { text-align: center; padding: 16px; color: var(--text3); font-family: var(--font-mono); font-size: 12px; }
+
+  @media (max-width: 768px) {
+    .header { padding: 14px 16px; }
+    .nav { padding: 0 16px; }
+    .main { padding: 16px; }
+    .g2, .g3, .g4 { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-left">
+    <div class="logo">CET // JOURNAL</div>
+    <div class="logo-sub">Contraction Expansion Trend</div>
+  </div>
+  <div class="header-right">
+    <span class="entry-count" id="entryCount">0 entries</span>
+    <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
+    <label class="btn btn-sm" style="cursor:pointer">Import CSV<input type="file" accept=".csv" id="importFile" style="display:none" onchange="importCSV(event)"></label>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-tab active" onclick="switchTab('entry')">New Entry</button>
+  <button class="nav-tab" onclick="switchTab('journal')">Journal</button>
+  <button class="nav-tab" onclick="switchTab('analytics')">Analytics</button>
+</nav>
+
+<div class="main">
+
+  <!-- NEW ENTRY -->
+  <div id="tab-entry" class="section active">
+    <div class="notice">Auto-calculated fields: 50% level and range. Capital & Risk% are optional — used for position sizing stats.</div>
+
+    <!-- NEWS FEED -->
+    <div class="news-card" id="newsCard">
+      <div class="news-header">
+        <div class="news-header-left">📅 Economic Calendar — EUR & USD</div>
+        <div class="news-header-right">
+          <button class="news-date-nav" onclick="newsShiftDay(-1)">◀</button>
+          <span id="newsDateLabel" style="font-family:var(--font-mono);font-size:11px;color:var(--text2)"></span>
+          <button class="news-date-nav" onclick="newsShiftDay(1)">▶</button>
+          <button class="news-date-nav" onclick="newsGoToday()">Today</button>
+          <button class="news-date-nav" onclick="fetchNews()">↻</button>
+        </div>
+      </div>
+      <div id="newsContent"><div class="news-loading">Loading news feed...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Setup</div>
+      <div class="g4">
+        <div class="form-group"><label>Date *</label><input type="datetime-local" id="f-date"></div>
+        <div class="form-group"><label>Asset *</label>
+          <select id="f-asset">
+            <option value="GOLD">Gold (XAUUSD)</option>
+            <option value="DAX">DAX (DE30/DE40)</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Signal *</label>
+          <select id="f-signal">
+            <option value="BUY">Buy</option>
+            <option value="SELL">Sell</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Timeframe *</label>
+          <select id="f-tf">
+            <option value="H1">H1</option>
+            <option value="H4">H4</option>
+          </select>
+        </div>
+      </div>
+      <div class="g4" style="margin-top:14px">
+        <div class="form-group"><label>Session</label>
+          <select id="f-session">
+            <option value="Asia">Asia</option>
+            <option value="Europe">Europe</option>
+            <option value="US">U.S.</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Session Type</label>
+          <select id="f-sesstype">
+            <option value="Regular">Regular</option>
+            <option value="News">News</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Pierced HT</label>
+          <select id="f-pierced">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Entry Type</label>
+          <select id="f-entrytype">
+            <option value="50%">50% Retrace</option>
+            <option value="Better">Better Price</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Contraction Levels</div>
+      <div class="g4">
+        <div class="form-group"><label>Contraction High *</label><input type="number" id="f-chigh" step="0.01" placeholder="e.g. 5320.50" oninput="calcAuto()"></div>
+        <div class="form-group"><label>Contraction Low *</label><input type="number" id="f-clow" step="0.01" placeholder="e.g. 5280.00" oninput="calcAuto()"></div>
+        <div class="form-group"><label>50% Level (auto)</label><input type="number" id="f-c50" readonly></div>
+        <div class="form-group"><label>Range (auto)</label><input type="number" id="f-crange" readonly></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Result</div>
+      <div class="g4">
+        <div class="form-group"><label>Max Price</label><input type="number" id="f-maxprice" step="0.01" placeholder="Best price reached"></div>
+        <div class="form-group"><label>Target Hit</label>
+          <select id="f-targethit">
+            <option value="No">No</option>
+            <option value="Yes">Yes</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Ranges Made</label><input type="number" id="f-ranges" step="0.1" placeholder="e.g. 1.5" value="1"></div>
+        <div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Capital & Risk (Optional)</div>
+      <div class="g3">
+        <div class="form-group"><label>Initial Capital</label><input type="number" id="f-capital" step="1" value="10000"></div>
+        <div class="form-group"><label>Risk %</label><input type="number" id="f-risk" step="0.1" value="1"></div>
+        <div class="form-group"><label>Risk Amount (auto)</label><input type="number" id="f-riskamt" readonly></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Notes</div>
+      <div class="form-group"><textarea id="f-comment" placeholder="Trade observations, market context, lessons learned..."></textarea></div>
+    </div>
+
+    <div class="form-actions">
+      <button class="btn" onclick="clearForm()">Clear</button>
+      <button class="btn btn-primary" onclick="saveEntry()">Save Entry →</button>
+    </div>
+  </div>
+
+  <!-- JOURNAL -->
+  <div id="tab-journal" class="section">
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <select id="filterAsset" class="btn btn-sm" onchange="renderJournal()" style="padding:5px 10px;font-size:11px">
+          <option value="">All assets</option>
+          <option value="GOLD">Gold</option>
+          <option value="DAX">DAX</option>
+        </select>
+        <select id="filterSignal" class="btn btn-sm" onchange="renderJournal()" style="padding:5px 10px;font-size:11px">
+          <option value="">All signals</option>
+          <option value="BUY">Buy</option>
+          <option value="SELL">Sell</option>
+        </select>
+        <select id="filterTF" class="btn btn-sm" onchange="renderJournal()" style="padding:5px 10px;font-size:11px">
+          <option value="">All timeframes</option>
+          <option value="H1">H1</option>
+          <option value="H4">H4</option>
+        </select>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-sm" onclick="exportCSV()">Export CSV</button>
+      </div>
+    </div>
+    <div id="journalContent"><div class="empty">No entries yet. Add your first CET trade.</div></div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div id="tab-analytics" class="section">
+    <div id="analyticsContent"><div class="empty">Add at least 2 entries to see analytics.</div></div>
+  </div>
+
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Edit Entry</div>
+        <div class="modal-date" id="editModalDate"></div>
+      </div>
+      <button class="modal-close" onclick="closeEdit()">×</button>
+    </div>
+    <input type="hidden" id="e-id">
+    <div class="modal-section">
+      <div class="modal-section-title">Setup</div>
+      <div class="g4">
+        <div class="form-group"><label>Date</label><input type="datetime-local" id="e-date"></div>
+        <div class="form-group"><label>Asset</label><select id="e-asset"><option value="GOLD">Gold</option><option value="DAX">DAX</option></select></div>
+        <div class="form-group"><label>Signal</label><select id="e-signal"><option value="BUY">Buy</option><option value="SELL">Sell</option></select></div>
+        <div class="form-group"><label>Timeframe</label><select id="e-tf"><option value="H1">H1</option><option value="H4">H4</option></select></div>
+      </div>
+      <div class="g4" style="margin-top:10px">
+        <div class="form-group"><label>Session</label><select id="e-session"><option value="Asia">Asia</option><option value="Europe">Europe</option><option value="US">U.S.</option></select></div>
+        <div class="form-group"><label>Session Type</label><select id="e-sesstype"><option value="Regular">Regular</option><option value="News">News</option></select></div>
+        <div class="form-group"><label>Pierced HT</label><select id="e-pierced"><option value="No">No</option><option value="Yes">Yes</option></select></div>
+        <div class="form-group"><label>Entry Type</label><select id="e-entrytype"><option value="50%">50% Retrace</option><option value="Better">Better Price</option></select></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Contraction Levels</div>
+      <div class="g4">
+        <div class="form-group"><label>High</label><input type="number" id="e-chigh" step="0.01" oninput="calcAutoEdit()"></div>
+        <div class="form-group"><label>Low</label><input type="number" id="e-clow" step="0.01" oninput="calcAutoEdit()"></div>
+        <div class="form-group"><label>50% (auto)</label><input type="number" id="e-c50" readonly></div>
+        <div class="form-group"><label>Range (auto)</label><input type="number" id="e-crange" readonly></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Result</div>
+      <div class="g4">
+        <div class="form-group"><label>Max Price</label><input type="number" id="e-maxprice" step="0.01"></div>
+        <div class="form-group"><label>Target Hit</label><select id="e-targethit"><option value="No">No</option><option value="Yes">Yes</option></select></div>
+        <div class="form-group"><label>Ranges Made</label><input type="number" id="e-ranges" step="0.1"></div>
+        <div></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Capital & Risk</div>
+      <div class="g3">
+        <div class="form-group"><label>Capital</label><input type="number" id="e-capital" step="1"></div>
+        <div class="form-group"><label>Risk %</label><input type="number" id="e-risk" step="0.1"></div>
+        <div class="form-group"><label>Risk Amt (auto)</label><input type="number" id="e-riskamt" readonly></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Notes</div>
+      <div class="form-group"><textarea id="e-comment"></textarea></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn" onclick="closeEdit()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---- DATA ----
+let entries = JSON.parse(localStorage.getItem('cet_journal') || '[]');
+function persist() { localStorage.setItem('cet_journal', JSON.stringify(entries)); }
+function updateCount() { document.getElementById('entryCount').textContent = entries.length + ' entries'; }
+
+// ---- TAB NAV ----
+function switchTab(tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelector(`[onclick="switchTab('${tab}')"]`).classList.add('active');
+  document.getElementById('tab-' + tab).classList.add('active');
+  if (tab === 'journal') renderJournal();
+  if (tab === 'analytics') renderAnalytics();
+}
+
+// ---- AUTO CALC ----
+function calcAuto() {
+  const h = parseFloat(document.getElementById('f-chigh').value);
+  const l = parseFloat(document.getElementById('f-clow').value);
+  if (!isNaN(h) && !isNaN(l) && h > l) {
+    document.getElementById('f-c50').value = ((h + l) / 2).toFixed(2);
+    document.getElementById('f-crange').value = (h - l).toFixed(2);
+  }
+  const cap = parseFloat(document.getElementById('f-capital').value);
+  const risk = parseFloat(document.getElementById('f-risk').value);
+  if (!isNaN(cap) && !isNaN(risk)) {
+    document.getElementById('f-riskamt').value = (cap * risk / 100).toFixed(2);
+  }
+}
+function calcAutoEdit() {
+  const h = parseFloat(document.getElementById('e-chigh').value);
+  const l = parseFloat(document.getElementById('e-clow').value);
+  if (!isNaN(h) && !isNaN(l) && h > l) {
+    document.getElementById('e-c50').value = ((h + l) / 2).toFixed(2);
+    document.getElementById('e-crange').value = (h - l).toFixed(2);
+  }
+  const cap = parseFloat(document.getElementById('e-capital').value);
+  const risk = parseFloat(document.getElementById('e-risk').value);
+  if (!isNaN(cap) && !isNaN(risk)) {
+    document.getElementById('e-riskamt').value = (cap * risk / 100).toFixed(2);
+  }
+}
+
+// ---- SAVE ENTRY ----
+function gv(id) { return document.getElementById(id).value; }
+function gvn(id) { const v = parseFloat(gv(id)); return isNaN(v) ? null : v; }
+
+function saveEntry() {
+  const date = gv('f-date');
+  const chigh = gvn('f-chigh');
+  const clow = gvn('f-clow');
+  const signal = gv('f-signal');
+  if (!date || chigh === null || clow === null) { alert('Please fill Date, Contraction High, and Contraction Low.'); return; }
+
+  const dt = new Date(date);
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const dow = dayNames[dt.getDay()];
+  const month = monthNames[dt.getMonth()];
+  const hour = dt.getHours();
+  const range = parseFloat((chigh - clow).toFixed(2));
+  const c50 = parseFloat(((chigh + clow) / 2).toFixed(2));
+  const maxPrice = gvn('f-maxprice');
+
+  // Calculate max range from entry
+  let maxRange = null;
+  if (maxPrice !== null) {
+    if (signal === 'SELL') maxRange = parseFloat((c50 - maxPrice).toFixed(2));
+    else maxRange = parseFloat((maxPrice - c50).toFixed(2));
+  }
+
+  const entry = {
+    id: Date.now(),
+    date, dow, month, hour,
+    asset: gv('f-asset'),
+    signal,
+    tf: gv('f-tf'),
+    session: gv('f-session'),
+    sesstype: gv('f-sesstype'),
+    pierced: gv('f-pierced'),
+    entrytype: gv('f-entrytype'),
+    chigh, clow, c50, range,
+    maxPrice, maxRange,
+    targetHit: gv('f-targethit') === 'Yes',
+    rangesMade: gvn('f-ranges'),
+    capital: gvn('f-capital'),
+    riskPct: gvn('f-risk'),
+    riskAmt: gvn('f-riskamt'),
+    comment: gv('f-comment')
+  };
+
+  entries.push(entry);
+  entries.sort((a, b) => b.date.localeCompare(a.date));
+  persist();
+  updateCount();
+  clearForm();
+  alert('Entry saved!');
+  switchTab('journal');
+}
+
+function clearForm() {
+  ['f-date','f-chigh','f-clow','f-c50','f-crange','f-maxprice','f-ranges','f-comment'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('f-ranges').value = '1';
+  document.getElementById('f-capital').value = '10000';
+  document.getElementById('f-risk').value = '1';
+  calcAuto();
+}
+
+// ---- BADGES ----
+function sigBadge(s) { return s === 'BUY' ? '<span class="badge b-pos">BUY</span>' : '<span class="badge b-neg">SELL</span>'; }
+function hitBadge(h) { return h ? '<span class="dot dot-hit"></span><b>HIT</b>' : '<span class="dot dot-miss"></span>No'; }
+function sessBadge(s) { return `<span class="badge b-blue">${s}</span>`; }
+function tfBadge(t) { return `<span class="badge b-neutral">${t}</span>`; }
+
+// ---- JOURNAL ----
+function renderJournal() {
+  const el = document.getElementById('journalContent');
+  let data = [...entries];
+  const fAsset = document.getElementById('filterAsset').value;
+  const fSignal = document.getElementById('filterSignal').value;
+  const fTF = document.getElementById('filterTF').value;
+  if (fAsset) data = data.filter(e => e.asset === fAsset);
+  if (fSignal) data = data.filter(e => e.signal === fSignal);
+  if (fTF) data = data.filter(e => e.tf === fTF);
+
+  if (!data.length) { el.innerHTML = '<div class="empty">No entries match filters.</div>'; return; }
+
+  let html = '<div class="table-wrap"><table><thead><tr>';
+  html += '<th>Date</th><th>Day</th><th>Asset</th><th>Signal</th><th>TF</th><th>Session</th><th>Type</th>';
+  html += '<th>C-High</th><th>C-Low</th><th>50%</th><th>Range</th>';
+  html += '<th>Target</th><th>Ranges</th><th>Max Price</th><th>Pierced</th><th>Entry</th>';
+  html += '<th></th></tr></thead><tbody>';
+
+  data.forEach(e => {
+    const dateStr = e.date ? e.date.replace('T', ' ').slice(0, 16) : '—';
+    html += `<tr>
+      <td>${dateStr}</td>
+      <td style="color:var(--text2)">${e.dow || '—'}</td>
+      <td><b>${e.asset}</b></td>
+      <td>${sigBadge(e.signal)}</td>
+      <td>${tfBadge(e.tf)}</td>
+      <td>${sessBadge(e.session)}</td>
+      <td style="color:var(--text3)">${e.sesstype}</td>
+      <td style="font-family:var(--font-mono)">${e.chigh}</td>
+      <td style="font-family:var(--font-mono)">${e.clow}</td>
+      <td style="font-family:var(--font-mono);color:var(--amber)">${e.c50}</td>
+      <td style="font-family:var(--font-mono)">${e.range}</td>
+      <td>${hitBadge(e.targetHit)}</td>
+      <td style="font-family:var(--font-mono);color:${e.rangesMade >= 1 ? 'var(--accent)' : 'var(--red)'}">${e.rangesMade ?? '—'}</td>
+      <td style="font-family:var(--font-mono)">${e.maxPrice ?? '—'}</td>
+      <td style="color:${e.pierced === 'Yes' ? 'var(--accent)' : 'var(--text3)'}">${e.pierced}</td>
+      <td style="color:var(--text3)">${e.entrytype}</td>
+      <td style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-edit" onclick="openEdit(${e.id})">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="delEntry(${e.id})">×</button>
+      </td>
+    </tr>`;
+    if (e.comment) html += `<tr class="notes-row"><td colspan="17" style="padding:4px 10px 8px">↳ ${e.comment}</td></tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  el.innerHTML = html;
+}
+
+function delEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  entries = entries.filter(e => e.id !== id);
+  persist(); updateCount(); renderJournal();
+}
+
+// ---- ANALYTICS ----
+let chartInstances = {};
+function destroyChart(id) { if (chartInstances[id]) { chartInstances[id].destroy(); delete chartInstances[id]; } }
+
+function renderAnalytics() {
+  const el = document.getElementById('analyticsContent');
+  if (entries.length < 2) { el.innerHTML = '<div class="empty">Add at least 2 entries to see analytics.</div>'; return; }
+
+  const n = entries.length;
+  const wins = entries.filter(e => e.targetHit).length;
+  const winRate = ((wins / n) * 100).toFixed(0);
+  const buys = entries.filter(e => e.signal === 'BUY');
+  const sells = entries.filter(e => e.signal === 'SELL');
+  const buyWins = buys.filter(e => e.targetHit).length;
+  const sellWins = sells.filter(e => e.targetHit).length;
+  const avgRanges = entries.filter(e => e.rangesMade != null).length ?
+    (entries.filter(e => e.rangesMade != null).reduce((s, e) => s + e.rangesMade, 0) / entries.filter(e => e.rangesMade != null).length).toFixed(2) : '—';
+  const avgRange = (entries.reduce((s, e) => s + (e.range || 0), 0) / n).toFixed(1);
+  const piercedPct = ((entries.filter(e => e.pierced === 'Yes').length / n) * 100).toFixed(0);
+
+  // Best performing
+  const goldEntries = entries.filter(e => e.asset === 'GOLD');
+  const daxEntries = entries.filter(e => e.asset === 'DAX');
+  const goldWR = goldEntries.length ? ((goldEntries.filter(e => e.targetHit).length / goldEntries.length) * 100).toFixed(0) : '—';
+  const daxWR = daxEntries.length ? ((daxEntries.filter(e => e.targetHit).length / daxEntries.length) * 100).toFixed(0) : '—';
+
+  // DOW stats
+  const dowNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+  const dowStats = {};
+  dowNames.forEach(d => { dowStats[d] = { count: 0, wins: 0, ranges: [] }; });
+  entries.forEach(e => {
+    if (!dowStats[e.dow]) return;
+    dowStats[e.dow].count++;
+    if (e.targetHit) dowStats[e.dow].wins++;
+    if (e.rangesMade != null) dowStats[e.dow].ranges.push(e.rangesMade);
+  });
+
+  // Hour stats (GMT+2)
+  const hourStats = {};
+  entries.forEach(e => {
+    const h = e.hour ?? new Date(e.date).getHours();
+    if (!hourStats[h]) hourStats[h] = { count: 0, wins: 0 };
+    hourStats[h].count++;
+    if (e.targetHit) hourStats[h].wins++;
+  });
+
+  // Month stats
+  const monthStats = {};
+  entries.forEach(e => {
+    const m = e.month ?? ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][new Date(e.date).getMonth()];
+    if (!monthStats[m]) monthStats[m] = { count: 0, wins: 0, ranges: [] };
+    monthStats[m].count++;
+    if (e.targetHit) monthStats[m].wins++;
+    if (e.rangesMade != null) monthStats[m].ranges.push(e.rangesMade);
+  });
+
+  // Session stats
+  const sessStats = {};
+  ['Asia', 'Europe', 'US'].forEach(s => { sessStats[s] = { count: 0, wins: 0 }; });
+  entries.forEach(e => {
+    if (!sessStats[e.session]) return;
+    sessStats[e.session].count++;
+    if (e.targetHit) sessStats[e.session].wins++;
+  });
+
+  // Best hour
+  let bestHour = '—', bestHourWR = 0;
+  Object.keys(hourStats).forEach(h => {
+    const wr = hourStats[h].count >= 2 ? (hourStats[h].wins / hourStats[h].count) * 100 : 0;
+    if (wr > bestHourWR) { bestHourWR = wr; bestHour = h + ':00'; }
+  });
+
+  // Best day
+  let bestDay = '—', bestDayWR = 0;
+  dowNames.forEach(d => {
+    const s = dowStats[d];
+    if (s.count >= 2) {
+      const wr = (s.wins / s.count) * 100;
+      if (wr > bestDayWR) { bestDayWR = wr; bestDay = d; }
+    }
+  });
+
+  // Best month
+  let bestMonth = '—', bestMonthWR = 0;
+  Object.keys(monthStats).forEach(m => {
+    const s = monthStats[m];
+    if (s.count >= 2) {
+      const wr = (s.wins / s.count) * 100;
+      if (wr > bestMonthWR) { bestMonthWR = wr; bestMonth = m; }
+    }
+  });
+
+  // Best session
+  let bestSess = '—', bestSessWR = 0;
+  Object.keys(sessStats).forEach(s => {
+    if (sessStats[s].count >= 2) {
+      const wr = (sessStats[s].wins / sessStats[s].count) * 100;
+      if (wr > bestSessWR) { bestSessWR = wr; bestSess = s; }
+    }
+  });
+
+  el.innerHTML = `
+  <div class="metric-grid">
+    <div class="metric"><div class="metric-label">Total Trades</div><div class="metric-value">${n}</div></div>
+    <div class="metric"><div class="metric-label">Win Rate</div><div class="metric-value" style="color:${winRate >= 50 ? 'var(--accent)' : 'var(--red)'}">${winRate}%</div><div class="metric-sub">${wins}/${n} targets hit</div></div>
+    <div class="metric"><div class="metric-label">Avg Ranges</div><div class="metric-value">${avgRanges}</div><div class="metric-sub">1 = target</div></div>
+    <div class="metric"><div class="metric-label">Avg C-Range</div><div class="metric-value">${avgRange}</div><div class="metric-sub">points</div></div>
+    <div class="metric"><div class="metric-label">Pierced HT</div><div class="metric-value">${piercedPct}%</div></div>
+    <div class="metric"><div class="metric-label">Best Day</div><div class="metric-value">${bestDay}</div><div class="metric-sub">${bestDayWR.toFixed(0)}% WR</div></div>
+    <div class="metric"><div class="metric-label">Best Hour</div><div class="metric-value">${bestHour}</div><div class="metric-sub">${bestHourWR.toFixed(0)}% WR (GMT+2)</div></div>
+    <div class="metric"><div class="metric-label">Best Session</div><div class="metric-value">${bestSess}</div><div class="metric-sub">${bestSessWR.toFixed(0)}% WR</div></div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Signal Breakdown</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="border:1px solid #0f4030;border-radius:var(--radius);padding:14px;background:#060e0a">
+          <div style="font-size:10px;color:var(--accent);font-family:var(--font-mono);margin-bottom:8px">BUY SETUPS</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Win rate: <b style="color:var(--text)">${buys.length ? ((buyWins / buys.length) * 100).toFixed(0) : '—'}%</b></div>
+          <div style="font-size:11px;color:var(--text2)">Trades: <b style="color:var(--text)">${buys.length}</b></div>
+        </div>
+        <div style="border:1px solid #4a1010;border-radius:var(--radius);padding:14px;background:#0e0606">
+          <div style="font-size:10px;color:var(--red);font-family:var(--font-mono);margin-bottom:8px">SELL SETUPS</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Win rate: <b style="color:var(--text)">${sells.length ? ((sellWins / sells.length) * 100).toFixed(0) : '—'}%</b></div>
+          <div style="font-size:11px;color:var(--text2)">Trades: <b style="color:var(--text)">${sells.length}</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Asset Breakdown</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:14px;background:var(--bg3)">
+          <div style="font-size:10px;color:var(--amber);font-family:var(--font-mono);margin-bottom:8px">GOLD</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Win rate: <b style="color:var(--text)">${goldWR}%</b></div>
+          <div style="font-size:11px;color:var(--text2)">Trades: <b style="color:var(--text)">${goldEntries.length}</b></div>
+        </div>
+        <div style="border:1px solid var(--border);border-radius:var(--radius);padding:14px;background:var(--bg3)">
+          <div style="font-size:10px;color:var(--blue);font-family:var(--font-mono);margin-bottom:8px">DAX</div>
+          <div style="font-size:11px;color:var(--text2);margin-bottom:4px">Win rate: <b style="color:var(--text)">${daxWR}%</b></div>
+          <div style="font-size:11px;color:var(--text2)">Trades: <b style="color:var(--text)">${daxEntries.length}</b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Day-of-week Performance</div>
+      <table>
+        <thead><tr><th>Day</th><th>Trades</th><th>Win%</th><th>Avg Ranges</th></tr></thead>
+        <tbody>
+        ${dowNames.map(d => {
+          const s = dowStats[d]; if (!s || !s.count) return `<tr><td style="color:var(--text3)">${d}</td><td colspan="3" style="color:var(--text3)">—</td></tr>`;
+          const avgR = s.ranges.length ? (s.ranges.reduce((a, b) => a + b, 0) / s.ranges.length).toFixed(2) : '—';
+          const wr = ((s.wins / s.count) * 100).toFixed(0);
+          return `<tr><td style="font-weight:500">${d}</td><td style="font-family:var(--font-mono)">${s.count}</td><td style="font-family:var(--font-mono);color:${wr >= 50 ? 'var(--accent)' : 'var(--red)'}">${wr}%</td><td style="font-family:var(--font-mono)">${avgR}</td></tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Session Performance</div>
+      <table>
+        <thead><tr><th>Session</th><th>Trades</th><th>Win%</th></tr></thead>
+        <tbody>
+        ${['Asia', 'Europe', 'US'].map(s => {
+          const st = sessStats[s]; if (!st || !st.count) return `<tr><td>${s}</td><td colspan="2" style="color:var(--text3)">—</td></tr>`;
+          const wr = ((st.wins / st.count) * 100).toFixed(0);
+          return `<tr><td style="font-weight:500">${s}</td><td style="font-family:var(--font-mono)">${st.count}</td><td style="font-family:var(--font-mono);color:${wr >= 50 ? 'var(--accent)' : 'var(--red)'}">${wr}%</td></tr>`;
+        }).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Monthly Performance</div>
+    <table>
+      <thead><tr><th>Month</th><th>Trades</th><th>Win%</th><th>Avg Ranges</th></tr></thead>
+      <tbody>
+      ${Object.keys(monthStats).map(m => {
+        const s = monthStats[m];
+        const wr = ((s.wins / s.count) * 100).toFixed(0);
+        const avgR = s.ranges.length ? (s.ranges.reduce((a, b) => a + b, 0) / s.ranges.length).toFixed(2) : '—';
+        return `<tr><td style="font-weight:500">${m}</td><td style="font-family:var(--font-mono)">${s.count}</td><td style="font-family:var(--font-mono);color:${wr >= 50 ? 'var(--accent)' : 'var(--red)'}">${wr}%</td><td style="font-family:var(--font-mono)">${avgR}</td></tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+  </div>
+
+  ${n >= 3 ? `
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Win Rate by Hour (GMT+2)</div>
+      <div class="chart-wrap"><canvas id="chartHour"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Ranges Made Distribution</div>
+      <div class="chart-wrap"><canvas id="chartRanges"></canvas></div>
+    </div>
+  </div>
+  ` : ''}`;
+
+  if (n >= 3) setTimeout(buildCharts, 80);
+}
+
+function buildCharts() {
+  const tgrid = { color: 'rgba(255,255,255,0.04)' };
+  const tcolor = '#4a6060';
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { x: { ticks: { color: tcolor, font: { size: 10 } }, grid: tgrid },
+              y: { ticks: { color: tcolor, font: { size: 10 } }, grid: tgrid } }
+  };
+
+  // Hour chart
+  destroyChart('hour');
+  const c1 = document.getElementById('chartHour');
+  if (c1) {
+    const hourData = {};
+    entries.forEach(e => {
+      const h = e.hour ?? new Date(e.date).getHours();
+      if (!hourData[h]) hourData[h] = { total: 0, wins: 0 };
+      hourData[h].total++;
+      if (e.targetHit) hourData[h].wins++;
+    });
+    const hours = Object.keys(hourData).sort((a, b) => a - b);
+    const wrData = hours.map(h => hourData[h].total >= 1 ? ((hourData[h].wins / hourData[h].total) * 100).toFixed(0) : 0);
+
+    chartInstances['hour'] = new Chart(c1, {
+      type: 'bar',
+      data: { labels: hours.map(h => h + ':00'), datasets: [{ data: wrData.map(Number), backgroundColor: wrData.map(v => v >= 50 ? 'rgba(0,200,150,0.7)' : 'rgba(224,85,85,0.7)'), borderRadius: 3 }] },
+      options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, max: 100, ticks: { ...baseOpts.scales.y.ticks, callback: v => v + '%' } } } }
+    });
+  }
+
+  // Ranges distribution
+  destroyChart('ranges');
+  const c2 = document.getElementById('chartRanges');
+  if (c2) {
+    const rangesData = entries.filter(e => e.rangesMade != null).map(e => e.rangesMade).sort((a, b) => a - b);
+    const labels = entries.filter(e => e.rangesMade != null).map(e => (e.date || '').slice(5, 10) + ' ' + e.signal.charAt(0)).reverse().slice(0, 20).reverse();
+    const vals = entries.filter(e => e.rangesMade != null).map(e => e.rangesMade).reverse().slice(0, 20).reverse();
+
+    chartInstances['ranges'] = new Chart(c2, {
+      type: 'bar',
+      data: { labels, datasets: [{ data: vals, backgroundColor: vals.map(v => v >= 1 ? 'rgba(0,200,150,0.7)' : 'rgba(224,85,85,0.7)'), borderRadius: 3 }] },
+      options: { ...baseOpts, scales: { ...baseOpts.scales, y: { ...baseOpts.scales.y, beginAtZero: true } } }
+    });
+  }
+}
+
+// ---- EDIT ----
+function openEdit(id) {
+  const e = entries.find(x => x.id === id);
+  if (!e) return;
+  document.getElementById('e-id').value = id;
+  document.getElementById('editModalDate').textContent = (e.date || '').replace('T', ' ').slice(0, 16);
+  const set = (fid, val) => { const el = document.getElementById(fid); if (el) el.value = val ?? ''; };
+  set('e-date', e.date); set('e-chigh', e.chigh); set('e-clow', e.clow); set('e-c50', e.c50); set('e-crange', e.range);
+  set('e-maxprice', e.maxPrice); set('e-ranges', e.rangesMade);
+  set('e-capital', e.capital); set('e-risk', e.riskPct); set('e-riskamt', e.riskAmt);
+  set('e-comment', e.comment);
+  document.getElementById('e-asset').value = e.asset || 'GOLD';
+  document.getElementById('e-signal').value = e.signal || 'BUY';
+  document.getElementById('e-tf').value = e.tf || 'H4';
+  document.getElementById('e-session').value = e.session || 'Europe';
+  document.getElementById('e-sesstype').value = e.sesstype || 'Regular';
+  document.getElementById('e-pierced').value = e.pierced || 'No';
+  document.getElementById('e-entrytype').value = e.entrytype || '50%';
+  document.getElementById('e-targethit').value = e.targetHit ? 'Yes' : 'No';
+  document.getElementById('editModal').classList.add('open');
+  calcAutoEdit();
+}
+
+function closeEdit() { document.getElementById('editModal').classList.remove('open'); }
+document.getElementById('editModal').addEventListener('click', function(ev) { if (ev.target === this) closeEdit(); });
+
+function saveEdit() {
+  const id = parseInt(document.getElementById('e-id').value);
+  const idx = entries.findIndex(x => x.id === id);
+  if (idx === -1) return;
+
+  const date = document.getElementById('e-date').value;
+  const chigh = parseFloat(document.getElementById('e-chigh').value);
+  const clow = parseFloat(document.getElementById('e-clow').value);
+  if (!date || isNaN(chigh) || isNaN(clow)) { alert('Date, High, and Low are required.'); return; }
+
+  const dt = new Date(date);
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const signal = document.getElementById('e-signal').value;
+  const c50 = parseFloat(((chigh + clow) / 2).toFixed(2));
+  const range = parseFloat((chigh - clow).toFixed(2));
+  const maxPrice = parseFloat(document.getElementById('e-maxprice').value) || null;
+  let maxRange = null;
+  if (maxPrice !== null) {
+    if (signal === 'SELL') maxRange = parseFloat((c50 - maxPrice).toFixed(2));
+    else maxRange = parseFloat((maxPrice - c50).toFixed(2));
+  }
+
+  entries[idx] = {
+    ...entries[idx], date,
+    dow: dayNames[dt.getDay()],
+    month: monthNames[dt.getMonth()],
+    hour: dt.getHours(),
+    asset: document.getElementById('e-asset').value,
+    signal,
+    tf: document.getElementById('e-tf').value,
+    session: document.getElementById('e-session').value,
+    sesstype: document.getElementById('e-sesstype').value,
+    pierced: document.getElementById('e-pierced').value,
+    entrytype: document.getElementById('e-entrytype').value,
+    chigh, clow, c50, range,
+    maxPrice, maxRange,
+    targetHit: document.getElementById('e-targethit').value === 'Yes',
+    rangesMade: parseFloat(document.getElementById('e-ranges').value) || null,
+    capital: parseFloat(document.getElementById('e-capital').value) || null,
+    riskPct: parseFloat(document.getElementById('e-risk').value) || null,
+    riskAmt: parseFloat(document.getElementById('e-riskamt').value) || null,
+    comment: document.getElementById('e-comment').value
+  };
+
+  entries.sort((a, b) => b.date.localeCompare(a.date));
+  persist(); closeEdit(); renderJournal();
+}
+
+// ---- CSV EXPORT ----
+function exportCSV() {
+  if (!entries.length) { alert('No entries to export.'); return; }
+  const headers = ['date','dow','month','hour','asset','signal','tf','session','sesstype','pierced','entrytype','chigh','clow','c50','range','maxPrice','maxRange','targetHit','rangesMade','capital','riskPct','riskAmt','comment'];
+  const rows = entries.map(e => headers.map(h => {
+    const v = e[h];
+    if (v === null || v === undefined) return '';
+    if (typeof v === 'string' && (v.includes(',') || v.includes('"'))) return '"' + v.replace(/"/g, '""') + '"';
+    return v;
+  }).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'cet_journal_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click(); URL.revokeObjectURL(url);
+}
+
+// ---- CSV IMPORT ----
+function importCSV(evt) {
+  const file = evt.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const lines = e.target.result.split('\n').filter(l => l.trim());
+    if (lines.length < 2) { alert('CSV appears empty.'); return; }
+    const headers = lines[0].split(',').map(h => h.trim());
+    const numFields = ['chigh','clow','c50','range','maxPrice','maxRange','rangesMade','capital','riskPct','riskAmt','hour'];
+    const boolFields = ['targetHit'];
+    let imported = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const vals = parseCSVLine(lines[i]);
+      if (vals.length < 2) continue;
+      const obj = { id: Date.now() + i };
+      headers.forEach((h, idx) => {
+        const v = vals[idx] || '';
+        if (numFields.includes(h)) obj[h] = v === '' ? null : parseFloat(v);
+        else if (boolFields.includes(h)) obj[h] = v === 'true';
+        else obj[h] = v;
+      });
+      entries.push(obj); imported++;
+    }
+    entries.sort((a, b) => b.date.localeCompare(a.date));
+    persist(); updateCount();
+    alert(`Imported ${imported} entries.`);
+    evt.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+function parseCSVLine(line) {
+  const result = []; let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    if (line[i] === '"') { if (inQ && line[i + 1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+    else if (line[i] === ',' && !inQ) { result.push(cur); cur = ''; }
+    else cur += line[i];
+  }
+  result.push(cur); return result;
+}
+
+// Init
+updateCount();
+calcAuto();
+
+// ---- NEWS FEED ----
+let newsData = [];
+let newsViewDate = new Date();
+const NEWS_URL = 'https://nfs.faireconomy.media/ff_calendar_thisweek.xml';
+const CORS_PROXIES = [
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+  url => url  // Direct (works if CORS headers present or local file)
+];
+
+function formatNewsDate(d) {
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  const yyyy = d.getFullYear();
+  return `${mm}-${dd}-${yyyy}`;
+}
+
+function displayNewsDate(d) {
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+function newsShiftDay(delta) {
+  newsViewDate.setDate(newsViewDate.getDate() + delta);
+  renderNews();
+}
+function newsGoToday() { newsViewDate = new Date(); renderNews(); }
+
+async function fetchNews() {
+  document.getElementById('newsContent').innerHTML = '<div class="news-loading">Fetching calendar...</div>';
+
+  for (const proxyFn of CORS_PROXIES) {
+    try {
+      const resp = await fetch(proxyFn(NEWS_URL));
+      if (!resp.ok) continue;
+      const text = await resp.text();
+      const parser = new DOMParser();
+      const xml = parser.parseFromString(text, 'text/xml');
+      const events = xml.querySelectorAll('event');
+      newsData = [];
+
+      events.forEach(ev => {
+        const country = ev.querySelector('country')?.textContent || '';
+        // Only EUR and USD (and All for global events)
+        if (country !== 'EUR' && country !== 'USD' && country !== 'All') return;
+
+        const title = ev.querySelector('title')?.textContent || '';
+        const date = ev.querySelector('date')?.textContent || '';
+        const time = ev.querySelector('time')?.textContent || '';
+        const impact = ev.querySelector('impact')?.textContent || '';
+        const forecast = ev.querySelector('forecast')?.textContent || '';
+        const previous = ev.querySelector('previous')?.textContent || '';
+        const url = ev.querySelector('url')?.textContent || '';
+
+        // Parse date (format: MM-DD-YYYY)
+        const [m, d, y] = date.split('-').map(Number);
+        const dateKey = `${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}-${y}`;
+
+        // Convert time from ET to GMT+2 (add 6h for EDT, 7h for EST)
+        // Approximate: assume EDT (ET = GMT-4, so GMT+2 = ET+6)
+        let timeGMT2 = time;
+        if (time && time !== 'Tentative' && time !== 'All Day') {
+          const match = time.match(/(\d+):(\d+)(am|pm)/i);
+          if (match) {
+            let hr = parseInt(match[1]);
+            const min = match[2];
+            const ampm = match[3].toLowerCase();
+            if (ampm === 'pm' && hr !== 12) hr += 12;
+            if (ampm === 'am' && hr === 12) hr = 0;
+            hr += 6; // ET → GMT+2 (EDT)
+            if (hr >= 24) hr -= 24;
+            timeGMT2 = String(hr).padStart(2, '0') + ':' + min;
+          }
+        }
+
+        newsData.push({ title, country, dateKey, time: timeGMT2, timeRaw: time, impact, forecast, previous, url });
+      });
+
+      renderNews();
+      return; // Success
+    } catch (e) {
+      continue; // Try next proxy
+    }
+  }
+
+  // All proxies failed
+  document.getElementById('newsContent').innerHTML =
+    '<div class="news-empty">⚠ Could not fetch news feed. CORS blocked.<br><span style="font-size:10px;color:var(--text3);margin-top:6px;display:block">Try opening this file from a local server, or paste the XML manually.</span></div>';
+}
+
+function renderNews() {
+  const dateKey = formatNewsDate(newsViewDate);
+  document.getElementById('newsDateLabel').textContent = displayNewsDate(newsViewDate);
+
+  const todayEvents = newsData.filter(e => e.dateKey === dateKey);
+
+  if (!todayEvents.length) {
+    document.getElementById('newsContent').innerHTML = '<div class="news-empty">No EUR/USD events for this date.</div>';
+    return;
+  }
+
+  // Sort by time
+  todayEvents.sort((a, b) => a.time.localeCompare(b.time));
+
+  let html = '';
+  todayEvents.forEach(e => {
+    const impactClass = e.impact === 'High' ? 'high' : e.impact === 'Medium' ? 'med' : e.impact === 'Holiday' ? 'holiday' : 'low';
+    const impactColor = e.impact === 'High' ? 'impact-high' : e.impact === 'Medium' ? 'impact-med' : e.impact === 'Holiday' ? 'impact-holiday' : 'impact-low';
+
+    html += `<div class="news-row">
+      <div class="news-time">${e.time}</div>
+      <div class="news-ccy" style="color:${e.country === 'EUR' ? 'var(--blue)' : e.country === 'USD' ? 'var(--accent)' : 'var(--text3)'}">${e.country}</div>
+      <div class="news-title"><span class="impact-dot ${impactClass}"></span><span class="${impactColor}">${e.title}</span></div>
+      <div class="news-fc">${e.forecast || '—'}</div>
+      <div class="news-fc">${e.previous || '—'}</div>
+    </div>`;
+  });
+
+  // Header
+  const headerRow = `<div class="news-row" style="padding-bottom:4px;border-bottom:1px solid var(--border2)">
+    <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.06em">TIME (GMT+2)</div>
+    <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.06em">CCY</div>
+    <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.06em">EVENT</div>
+    <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.06em">FORECAST</div>
+    <div style="font-size:9px;color:var(--text3);font-family:var(--font-mono);letter-spacing:.06em">PREVIOUS</div>
+  </div>`;
+
+  const highCount = todayEvents.filter(e => e.impact === 'High').length;
+  const medCount = todayEvents.filter(e => e.impact === 'Medium').length;
+  const summary = `<div style="font-size:10px;color:var(--text3);font-family:var(--font-mono);margin-bottom:10px">
+    ${todayEvents.length} events — <span class="impact-high">${highCount} high</span> · <span class="impact-med">${medCount} medium</span>
+  </div>`;
+
+  document.getElementById('newsContent').innerHTML = summary + headerRow + html;
+}
+
+// Auto-fetch on load
+fetchNews();
+
+// ---- AUTO-SET SESSION TYPE BASED ON NEWS ----
+document.getElementById('f-date').addEventListener('change', function() {
+  checkNewsForDate(this.value);
+});
+
+function checkNewsForDate(dateStr) {
+  if (!dateStr || !newsData.length) return;
+  const dt = new Date(dateStr);
+  const dateKey = formatNewsDate(dt);
+  const highImpact = newsData.filter(e => e.dateKey === dateKey && e.impact === 'High');
+
+  if (highImpact.length > 0) {
+    document.getElementById('f-sesstype').value = 'News';
+    // Also jump the news view to this date
+    newsViewDate = new Date(dt);
+    renderNews();
+  } else {
+    document.getElementById('f-sesstype').value = 'Regular';
+  }
+}
+</script>
+</body>
+</html>
